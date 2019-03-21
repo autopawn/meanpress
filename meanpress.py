@@ -15,6 +15,7 @@ if not (args['c'] or args['x']):
 
 image = load_image(args['input'])
 
-(deltas,bits,start),axes,means = decompose_channel(image[...,0])
-for i in range(len(deltas)):
-    print("%d %10s %10s"%(axes[i],deltas[i].shape,means[i].shape))
+arrays,axes,means = decompose_channel(image[...,0])
+for i in range(len(arrays)):
+    delta,b,k = arrays[i]
+    print("%d %10s %10s %10s"%(axes[i],delta.shape,k.shape,b.shape))
