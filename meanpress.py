@@ -23,16 +23,8 @@ arrays,start,axes,means = decompose_channel(channel)
 for i in range(len(arrays)):
     delta,b,k = arrays[i]
 
-# Simulate reconstruction (we got arrays, start, and target_shape)
-shapes,tshapes,axes = predict_shapes(target_shape[:2])
-means = [np.array([[start]])]
-assert(len(shapes)==len(arrays))
-for i in range(len(shapes)-1,-1,-1):
-    assert(arrays[i][0].shape==shapes[i])
-    assert(arrays[i][1].shape==shapes[i])
-    assert(arrays[i][2].shape==shapes[i])
-    res = recompose_matrix(means[-1],arrays[i],tshapes[i],axes[i])
-    means.append(res)
+# Simulate reconstruction
+result = recompose_channel(arrays,start,target_shape)
 
-print(np.all(channel==means[-1]))
-assert(np.all(channel==means[-1]))
+print(np.all(channel==result))
+assert(np.all(channel==result))

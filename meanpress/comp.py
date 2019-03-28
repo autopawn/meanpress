@@ -122,6 +122,18 @@ def decompose_channel(array):
     start = front[0,0]
     return arrays,start,axes,means
 
+def recompose_channel(arrays,start,target_shape):
+    shapes,tshapes,axes = predict_shapes(target_shape[:2])
+    means = [np.array([[start]])]
+    assert(len(shapes)==len(arrays))
+    for i in range(len(shapes)-1,-1,-1):
+        assert(arrays[i][0].shape==shapes[i])
+        assert(arrays[i][1].shape==shapes[i])
+        assert(arrays[i][2].shape==shapes[i])
+        res = recompose_matrix(means[-1],arrays[i],tshapes[i],axes[i])
+        means.append(res)
+    return means[-1]
+
 def max_delta_abs(mean_array):
     max_delta = np.copy(mean_array)
     max_delta[max_delta>127] = 255-max_delta
