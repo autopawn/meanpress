@@ -29,6 +29,5 @@ for res in (0,1,2,3,4,251,252,253,254,255):
             min_x = np.min([x for (x,y) in combs[ko][res]])
             max_x = np.max([x for (x,y) in combs[ko][res]])
             print("%s : %3d - %3d"%(ko,min_x,max_x))
-        # print("%s : %s"%(ko,combs[ko][res]))
 
 # mode_b seems better
