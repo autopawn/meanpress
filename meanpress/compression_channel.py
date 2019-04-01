@@ -1,5 +1,8 @@
 import numpy as np
 
+from .compression_binary import compress_binary,decompress_binary
+from .compression_maxv import compress_deltas,decompress_deltas
+
 def decompose_matrix(array,axis):
     assert(len(array.shape)==2)
     assert(axis in (0,1))
@@ -117,7 +120,7 @@ def decompose_channel(array):
         # Update front to new mean
         front = mean
     # Return all components
-    # - means are extra, as they are not needed.
+    # - means are extra, as they are not needed (but we don't want to recompute them again)
     # - axes are extra, as they can be calculated.
     start = front[0,0]
     return arrays,start,axes,means
@@ -134,6 +137,46 @@ def recompose_channel(arrays,start,target_shape):
         means.append(res)
     return means[-1]
 
-def max_delta_abs(mean_array):
-    max_delta = np.copy(mean_array)
-    max_delta[max_delta>127] = 255-max_delta
+def compress_channel(array,verbose=False):
+    arrays,start,axes,means = decompose_channel(array)
+    binary = []
+    for i in range(len(arrays)):
+        (delta,b,k) = arrays[i]
+        mean = means[i]
+        if verbose:
+            print("co mean %d %s"%(i,mean.shape))
+        x,y = compress_deltas(delta,mean)
+        binary.append(compress_binary(k))
+        binary.append(compress_binary(b))
+        binary.append(np.concatenate((x,y)))
+        if verbose:
+            cd = 8*4*binary[-1].size/delta.size
+            cb = 8*4*binary[-2].size/delta.size
+            ck = 8*4*binary[-3].size/delta.size
+            ct = cd+cb+ck
+            loss = 4*binary[-1].size-delta.size
+            print("  d,b,k,t per pixel: %9f %9f %9f %9f"%(cd,cb,ck,ct))
+            if loss>0:
+                print("  bytes loss!: %d"%(loss))
+
+    binary.append(np.array([start],dtype=np.uint64))
+    binary = np.concatenate(binary[::-1])
+    return binary
+
+def decompress_channel(bytesec,shape,verbose=False):
+    shapes,tshapes,axes = predict_shapes(shape)
+    w_read = 0
+    means = [np.array([[bytesec[w_read]]])]
+    w_read += 1
+    for i in range(len(shapes)-1,-1,-1):
+        if verbose:
+            print("de mean %d %s"%(i,means[-1].shape))
+        deltas,read = decompress_deltas(shapes[i],means[-1],bytesec[w_read:])
+        w_read += read
+        b,read = decompress_binary(shapes[i],bytesec[w_read:])
+        w_read += read
+        k,read = decompress_binary(shapes[i],bytesec[w_read:])
+        w_read += read
+        res = recompose_matrix(means[-1],(deltas,b,k),tshapes[i],axes[i])
+        means.append(res)
+    return means[-1],w_read

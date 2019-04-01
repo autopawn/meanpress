@@ -4,6 +4,8 @@ import numpy as np
 
 from numba import jit
 
+from .compression_general import *
+
 @jit(nopython=True)
 def bit_cost(xs):
     """
@@ -47,7 +49,7 @@ def maxes_from_means(mean):
     return maxv
 
 @jit(nopython=True)
-def compress_nexts(delta,maxv):
+def compress_delta_nexts(delta,maxv):
     """
     Compress some of the values in delta in one word,
     retuns grabs: how many values were added
@@ -156,7 +158,7 @@ def compress_deltas(delta,means):
     n = 0
     while n<means.shape[0]:
         # Compress
-        g,i32,outls = compress_nexts(delta[n:],maxv[n:])
+        g,i32,outls = compress_delta_nexts(delta[n:],maxv[n:])
         n += g
         numvalues.append(i32)
         for ou in outls:
@@ -170,26 +172,6 @@ def compress_deltas(delta,means):
         outl_ints[i//32] |= outlbinseq[i]<<(31-(i%32))
     # Done compressing
     return numvalues,outl_ints
-
-@jit(nopython=True)
-def divide_word(word):
-    """
-    Divides a word, creating an array of 32 bits
-    """
-    res = []
-    for i in range(32):
-        b = (word & (1<<(31-i))) >> (31-i)
-        assert(b==0 or b==1)
-        res.append(b)
-    return res
-
-@jit(nopython=True)
-def recompose_number(bits):
-    number = np.int32(0)
-    for b in bits:
-        number <<= 1
-        number |= b
-    return number
 
 @jit(nopython=True)
 def decompress_deltas(shape,means,bytesec):
