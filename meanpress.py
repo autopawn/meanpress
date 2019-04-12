@@ -17,11 +17,17 @@ if not (args['c'] or args['x']):
 image = load_image(args['input'])
 target_shape = image.shape
 
-
 # Simulate compression
-byteseq = compress_image(image)
+if True:
+    imagei32 = np.array(image,dtype=np.int32)
+    prediction = (imagei32[:-1,:-1]+imagei32[1:,:-1]+imagei32[:-1,1:]+1)//3
+    error = np.abs(imagei32[1:,1:]-prediction)
+    byteseq = compress_image(error)
+else:
+    byteseq = compress_image(image)
+
 image2 = decompress_image(byteseq)
-assert(np.all(image==image2))
+# assert(np.all(image==image2))
 # Compute radio
 rad = 4*byteseq.size/(target_shape[0]*target_shape[1]*target_shape[2])
 
