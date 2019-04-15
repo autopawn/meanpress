@@ -2,6 +2,7 @@ import numpy as np
 
 from .compression_binary import compress_binary,decompress_binary
 from .compression_maxv import compress_deltas,decompress_deltas
+from .display import display_channel_comp
 
 def decompose_matrix(array,axis):
     assert(len(array.shape)==2)
@@ -137,8 +138,11 @@ def recompose_channel(arrays,start,target_shape):
         means.append(res)
     return means[-1]
 
-def compress_channel(array,verbose=False):
+def compress_channel(array,verbose=False,display=False,**display_args):
     arrays,start,axes,means = decompose_channel(array)
+
+    encode_sizes = []
+    # Encode
     binary = []
     for i in range(len(arrays)):
         (delta,b,k) = arrays[i]
@@ -149,6 +153,9 @@ def compress_channel(array,verbose=False):
         binary.append(compress_binary(k))
         binary.append(compress_binary(b))
         binary.append(np.concatenate((x,y)))
+
+        encode_sizes.append((4*binary[-1].size,4*binary[-2].size,4*binary[-3].size))
+
         if verbose:
             cd = 8*4*binary[-1].size/delta.size
             cb = 8*4*binary[-2].size/delta.size
@@ -158,6 +165,10 @@ def compress_channel(array,verbose=False):
             print("  d,b,k,t per pixel: %9f %9f %9f %9f"%(cd,cb,ck,ct))
             if loss>0:
                 print("  bytes loss!: %d"%(loss))
+
+    # Display if requested
+    if display:
+        display_channel_comp(array,arrays,means,encode_sizes,**display_args)
 
     binary.append(np.array([start],dtype=np.uint64))
     binary = np.concatenate(binary[::-1])

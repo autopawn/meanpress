@@ -2,12 +2,13 @@ import numpy as np
 
 from .compression_channel import compress_channel,decompress_channel
 
-def compress_image(image,verbose=True):
+def compress_image(image,verbose=True,display=False,**display_args):
     assert(len(image.shape)==3)
     bytes = [np.array(image.shape,dtype=np.uint32)]
     for c in range(image.shape[2]):
         channel = image[...,c]
-        byteseq = compress_channel(channel)
+        display_args['display_channel_name'] = str(c)
+        byteseq = compress_channel(channel,verbose=verbose-1,display=display,**display_args)
         if verbose:
             rate = 4.0*byteseq.size/(image.shape[0]*image.shape[1])
             print("Channel %d rate: %9f"%(c,rate))
